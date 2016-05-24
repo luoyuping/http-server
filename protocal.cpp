@@ -522,10 +522,10 @@ void post_dynamic(int fd, char *filename, int contentLength,rio_t *rp)
             Execve(filename, emptylist, environ);
         }
         //Wait(NULL);
-        printf("test here,https[0] = %d\n",httpsp[0]);
+//        printf("test here,https[0] = %d\n",httpsp[0]);
         Read(httpsp[0],data,MAXLINE);
-        printf("filename:%s\n",filename);
-        printf("data:%s\n",data);
+//        printf("filename:%s\n",filename);
+//        printf("data:%s\n",data);
         SSL_write(ssl,data,strlen(data));
     }
     else

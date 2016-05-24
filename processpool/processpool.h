@@ -203,7 +203,8 @@ void processpool< T >::run_child()
         number = epoll_wait( m_epollfd, events, MAX_EVENT_NUMBER, -1 );
         if ( ( number < 0 ) && ( errno != EINTR ) )
         {
-            printf( "epoll failure\n" );
+//            printf( "epoll failure\n" );
+            syslog(LOG_CRIT,"epoll_wait error  in run_parent,errono is :%d,error message is %s\n",errno,strerror(errno));
             break;
         }
 
@@ -229,7 +230,8 @@ void processpool< T >::run_child()
                     {
                         if(errno == EAGAIN) continue;
                         else {
-                            printf("errno is: %d,error:%s\n", errno, strerror(errno));
+//                            printf("errno is: %d,error:%s\n", errno, strerror(errno));
+                            syslog(LOG_CRIT,"accept error ,errono is :%d,error message is %s\n",errno,strerror(errno));
                             continue;
                         }
                     }
@@ -319,6 +321,7 @@ void processpool< T >::run_parent()
         if ( ( number < 0 ) && ( errno != EINTR ) )
         {
             printf( "epoll failure\n" );
+            syslog(LOG_CRIT,"epoll failure in run_child, error ,errono is :%d,error message is %s\n",errno,strerror(errno));
             break;
         }
 
@@ -347,7 +350,7 @@ void processpool< T >::run_parent()
                 sub_process_counter = (i+1)%m_process_number;
                 //send( m_sub_process[sub_process_counter++].m_pipefd[0], ( char* )&new_conn, sizeof( new_conn ), 0 );
                 send( m_sub_process[i].m_pipefd[0], ( char* )&new_conn, sizeof( new_conn ), 0 );
-                printf( "send request to child %d\nthe count now is %d\n",i+1,count);
+//                printf( "send request to child %d\nthe count now is %d\n",i+1,count);
                 //sub_process_counter %= m_process_number;
             }
 			/*下面处理父进程接收到的信号*/
@@ -378,7 +381,7 @@ void processpool< T >::run_parent()
 									以标记该子进程已经退出*/
                                         if( m_sub_process[i].m_pid == pid )
                                         {
-                                            printf( "child %d join\n", i );
+//                                            printf( "child %d join\n", i );
                                             close( m_sub_process[i].m_pipefd[0] );
                                             m_sub_process[i].m_pid = -1;
                                         }
@@ -399,7 +402,8 @@ void processpool< T >::run_parent()
                             {
 								/*如果父进程接收到终止信号，那么就杀死所有子进程，并等待它们全部结束。当然，通知子进程结束
 								更好的方法是向父、子进程之间的通信管道发送页数数据*/
-                                printf( "kill all the clild now\n" );
+//                                printf( "kill all the clild now\n" );
+                                syslog(LOG_CRIT,"kill all the child now\n");
                                 for( int i = 0; i < m_process_number; ++i )
                                 {
                                     int pid = m_sub_process[i].m_pid;

@@ -215,8 +215,8 @@ ssize_t Read(int fd, void *buf, size_t count)
         syslog(LOG_CRIT,"Read error");
         unix_error("Read error");
     }
-    printf("do here: rc = %d, fd =%d\n",rc);
-    printf("data:%s\n",buf);
+//    printf("do here: rc = %d, fd =%d\n",rc);
+//    printf("data:%s\n",buf);
     return rc;
 }
 
