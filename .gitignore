@@ -3,9 +3,6 @@
 !/*.h
 !processpool/
 !cert.pem
-!README
-!README.md
-!CMakeLists.txt
 !Makefile
 !.gitignore
 
