@@ -5,5 +5,5 @@
 !cert.pem
 !Makefile
 !.gitignore
-
+!CMakeLists.txt
 
