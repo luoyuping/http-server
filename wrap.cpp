@@ -1,4 +1,5 @@
 #include "wrap.h"
+#include "protocal.h"
 
 /************************** 
  * Error-handling functions
@@ -8,7 +9,10 @@
 void unix_error(char *msg) /* unix-style error */
 {
     fprintf(stderr, "%s: %s\n", msg, strerror(errno));
-    exit(0);
+#ifdef HTTPS
+    if(ishttps)
+        exit(0);
+#endif
 }
 /* $end unixerror */
 
@@ -118,6 +122,7 @@ handler_t *Signal(int signum, handler_t *handler)
     {
         syslog(LOG_CRIT,"Signal error");
         unix_error("Signal error");
+        exit(0);
     }
     return (old_action.sa_handler);
 }
@@ -210,6 +215,8 @@ ssize_t Read(int fd, void *buf, size_t count)
         syslog(LOG_CRIT,"Read error");
         unix_error("Read error");
     }
+    printf("do here: rc = %d, fd =%d\n",rc);
+    printf("data:%s\n",buf);
     return rc;
 }
 
@@ -649,7 +656,10 @@ ssize_t Rio_readlineb(rio_t *rp, void *usrbuf, size_t maxlen)
     if ((rc = rio_readlineb(rp, usrbuf, maxlen)) < 0)
     {
         syslog(LOG_CRIT,"Rio_readlineb error");
-        unix_error("Rio_readlineb error");
+#ifdef HTTPS
+        if(ishttps)
+            unix_error("Rio_readlineb error");
+#endif
     }
     return rc;
 }
@@ -769,7 +779,9 @@ int Daemon(int nochdir, int noclose)
     {
         syslog(LOG_CRIT,"daemon error");
         unix_error("Daemon error");
+        return  -1;
     }
+    return 0;
 }
 
 struct passwd *Getpwnam(const char *name)

@@ -24,18 +24,12 @@ class http_conn
 public:
     http_conn(){}
     ~http_conn(){}
-    void init( int epollfd, int sockfd, const sockaddr_in& client_addr );
-    void process(int fd);
+    void init(int epollfd, int sockfd);
+    void process();
 private:
-    /*读缓冲区的大小*/
-    static const int BUFFER_SIZE = 1024;
     static int m_epollfd;
     int m_sockfd;
-    sockaddr_in m_address;
-    char m_buf[ BUFFER_SIZE ];
-    /*标记读缓冲区中已经读入的客户数据最后一个字节的下一个位置*/
-    int m_read_idx;
 };
-int http_conn::m_epollfd = -1;
+//int http_conn::m_epollfd = -1;
 
 #endif //LINUX_C_WEB_SERVER_PROCESSHTTP_H

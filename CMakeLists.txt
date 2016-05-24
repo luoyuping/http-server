@@ -5,10 +5,11 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS}   -O3  ")
 set(CMAKE_Cxx_FLAGS_DUBUG "$ENV{CXXFLAGS}  -O0  -g -ggdb")
 
 set(SOURCE_FILES
+        main.cpp
         daemon_init.cpp
         log.cpp
-        main.cpp
-        main.h
+        protocal.cpp
+        protocal.h
         parse.h
         parse_config.cpp
         parse_option.cpp

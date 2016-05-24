@@ -6,6 +6,8 @@ FILE* logfp=NULL;
 void initlog(const char* logp)
 {
 	logfp=Fopen(logp,"a+");
+	if(logfp == NULL)
+		exit(0);
 }
 
 int getmonth(struct tm* local)   // return month index ,eg. Oct->10

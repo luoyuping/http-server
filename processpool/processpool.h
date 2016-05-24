@@ -26,16 +26,13 @@ public:
     pid_t m_pid;
     int m_pipefd[2];
 };
-/*进程池类，将它定义为模板类是为了代码复用。其模板参数是处理逻辑任务的类*/
 template< typename T >
 class processpool
 {
 private:
-    /*将构造函数定义为私有的，因此我们只能通过后面的create静态函数来创建processpool实例*/
-    processpool( int listenfd, int process_number = 8 );
+    processpool( int listenfd, int process_number );
 public:
-	/*单体模式，以保证程序最多创建一个processpool实例，这是程序正确处理信号的必要条件*/
-    static processpool< T >* create( int listenfd, int process_number = 8 )
+    static processpool< T >* create( int listenfd, int process_number = 20 )
     {
         if( !m_instance )
         {
@@ -47,7 +44,6 @@ public:
     {
         delete [] m_sub_process;
     }
-    /*启动进程池*/
     void run();
 
 private:
@@ -57,7 +53,7 @@ private:
 
 private:
     /*进程池允许的最大子进程数量*/
-    static const int MAX_PROCESS_NUMBER = 16;
+    static const int MAX_PROCESS_NUMBER = 30;
     /*每个子进程最多能处理的客户数量*/
     static const int USER_PER_PROCESS = 65536;
     /*epoll最多能处理的事件数*/
@@ -94,7 +90,8 @@ static void addfd( int epollfd, int fd )
 {
     epoll_event event;
     event.data.fd = fd;
-    event.events = EPOLLIN | EPOLLET;
+//    event.events = EPOLLIN | EPOLLET;
+    event.events = EPOLLIN;
     epoll_ctl( epollfd, EPOLL_CTL_ADD, fd, &event );
     setnonblocking( fd );
 }
@@ -135,7 +132,6 @@ processpool< T >::processpool( int listenfd, int process_number )
 
     m_sub_process = new process[ process_number ];
     assert( m_sub_process );
-    /*创建process_number个子进程，并建立它们和父进程之间的管道*/
     for( int i = 0; i < process_number; ++i )
     {
         int ret = socketpair( PF_UNIX, SOCK_STREAM, 0, m_sub_process[i].m_pipefd );
@@ -219,7 +215,8 @@ void processpool< T >::run_child()
                 int client = 0;
 				/*从父、子进程之间的管道读取数据，并将结果保存在变量client中。如果读取成功，则表示有新客户连接到来*/
                 ret = recv( sockfd, ( char* )&client, sizeof( client ), 0 );
-                if( ( ( ret < 0 ) && ( errno != EAGAIN ) ) || ret == 0 ) 
+//                printf("process %d get a job ,client get from pipe is %d \n",getpid(),client);
+                if( ( ( ret < 0 ) && ( errno != EAGAIN ) ) || ret == 0 )
                 {
                     continue;
                 }
@@ -228,15 +225,18 @@ void processpool< T >::run_child()
                     struct sockaddr_in client_address;
                     socklen_t client_addrlength = sizeof( client_address );
                     int connfd = accept( m_listenfd, ( struct sockaddr* )&client_address, &client_addrlength );
-                    if ( connfd < 0 )
+                    if ( connfd < 0  )
                     {
-                        printf( "errno is: %d\n", errno );
-                        continue;
+                        if(errno == EAGAIN) continue;
+                        else {
+                            printf("errno is: %d,error:%s\n", errno, strerror(errno));
+                            continue;
+                        }
                     }
                     addfd( m_epollfd, connfd );
 					/*模板类T必须实现init方法，以初始化一个客户连接。我们直接使用connfd来索引逻辑处理对象（T类型的对象），
 					以提高程序效率*/
-                    users[connfd].init( m_epollfd, connfd, client_address );
+                    users[connfd].init( m_epollfd, connfd );
                 }
             }
 			/*下面处理子进程接收到的信号*/
@@ -282,6 +282,7 @@ void processpool< T >::run_child()
             else if( events[i].events & EPOLLIN )
             {
                  users[sockfd].process();
+                 close(sockfd);
             }
             else
             {
@@ -303,7 +304,6 @@ template< typename T >
 void processpool< T >::run_parent()
 {
     setup_sig_pipe();
-	/*父进程监听m_listenfd*/
     addfd( m_epollfd, m_listenfd );
 
     epoll_event events[ MAX_EVENT_NUMBER ];
@@ -311,6 +311,7 @@ void processpool< T >::run_parent()
     int new_conn = 1;
     int number = 0;
     int ret = -1;
+    int count =0;
 
     while( ! m_stop )
     {
@@ -327,6 +328,7 @@ void processpool< T >::run_parent()
             if( sockfd == m_listenfd )
             {
                 int i =  sub_process_counter;
+                count ++;
                 do
                 {
                     if( m_sub_process[i].m_pid != -1 )
@@ -345,7 +347,7 @@ void processpool< T >::run_parent()
                 sub_process_counter = (i+1)%m_process_number;
                 //send( m_sub_process[sub_process_counter++].m_pipefd[0], ( char* )&new_conn, sizeof( new_conn ), 0 );
                 send( m_sub_process[i].m_pipefd[0], ( char* )&new_conn, sizeof( new_conn ), 0 );
-                printf( "send request to child %d\n", i );
+                printf( "send request to child %d\nthe count now is %d\n",i+1,count);
                 //sub_process_counter %= m_process_number;
             }
 			/*下面处理父进程接收到的信号*/
