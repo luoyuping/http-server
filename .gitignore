@@ -3,7 +3,7 @@
 !/*.h
 !processpool/
 !cert.pem
-!Makefile
+#!Makefile
 !.gitignore
 !CMakeLists.txt
 !config.ini
