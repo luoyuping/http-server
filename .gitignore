@@ -6,4 +6,4 @@
 !Makefile
 !.gitignore
 !CMakeLists.txt
-
+!config.ini
