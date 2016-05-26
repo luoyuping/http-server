@@ -32,7 +32,7 @@ class processpool
 private:
     processpool( int listenfd, int process_number );
 public:
-    static processpool< T >* create( int listenfd, int process_number = 20 )
+    static processpool< T >* create( int listenfd, int process_number = 4 )
     {
         if( !m_instance )
         {
@@ -228,7 +228,8 @@ void processpool< T >::run_child()
                     int connfd = accept( m_listenfd, ( struct sockaddr* )&client_address, &client_addrlength );
                     if ( connfd < 0  )
                     {
-                        if(errno == EAGAIN) continue;
+
+                        if(errno == EAGAIN || errno == ECONNABORTED || errno == EPROTO || errno == EINTR) continue;
                         else {
 //                            printf("errno is: %d,error:%s\n", errno, strerror(errno));
                             syslog(LOG_CRIT,"accept error ,errono is :%d,error message is %s\n",errno,strerror(errno));
